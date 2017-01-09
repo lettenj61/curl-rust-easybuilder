@@ -4,25 +4,51 @@
 //! major curl options, or to set some callback operations.
 
 extern crate curl;
+#[macro_use]
+extern crate error_chain;
 
+use std::error::Error;
+use std::path::Path;
 use std::time::Duration;
 use curl::easy::{Easy, List};
 use curl::easy::{IpResolve, ProxyType, SslVersion, TimeCondition};
 use curl::easy::{WriteError};
 
-type BuildResult<'a> = Result<&'a mut Easy, curl::Error>;
+mod errors {
+    error_chain! {
+        types {
+            BuildError, ErrorKind, ResultExt, BuildResult;
+        }
+        foreign_links {
+            Curl(::curl::Error);
+        }
+    }
+}
+
+use errors::*;
 
 pub struct EasyBuilder {
     easy: Easy,
-    // TODO consider use error-chain
-    error: Option<curl::Error>,
+    // FIXME: I'm not sure is this effective and reasonable.
+    errors: Vec<curl::Error>,
 }
 
 macro_rules! option_setter {
     ( $meth:ident, $an:ident: $mt:ty ) => {
         pub fn $meth(&mut self, $an: $mt) -> &mut EasyBuilder {
             if let Err(e) = self.easy.$meth($an) {
-                self.error = Some(e);
+                self.errors.push(e);
+            }
+            self
+        }
+    };
+}
+
+macro_rules! path_opt {
+    ( $meth:ident, $an:ident ) => {
+        pub fn $meth<P: AsRef<Path>>(&mut self, $an: P) -> &mut EasyBuilder {
+            if let Err(e) = self.easy.$meth($an) {
+                self.errors.push(e);
             }
             self
         }
@@ -34,7 +60,7 @@ impl EasyBuilder {
     pub fn new() -> EasyBuilder {
         EasyBuilder {
             easy: Easy::new(),
-            error: None,
+            errors: Vec::new(),
         }
     }
 
@@ -76,8 +102,8 @@ impl EasyBuilder {
     option_setter!(useragent, useragent: &str);
     option_setter!(http_headers, list: List);
     option_setter!(cookie, cookie: &str);
-    //option_setter!(cookie_file<P: AsRef<Path>>, file: P);
-    //option_setter!(cookie_jar<P: AsRef<Path>>, file: P);
+    path_opt!(cookie_file, file);
+    path_opt!(cookie_jar, file);
     option_setter!(cookie_session, session: bool);
     option_setter!(cookie_list, cookie: &str);
     option_setter!(get, enable: bool);
@@ -105,9 +131,9 @@ impl EasyBuilder {
     option_setter!(connect_timeout, timeout: Duration);
     option_setter!(ip_resolve, resolve: IpResolve);
     option_setter!(connect_only, enable: bool);
-    //option_setter!(ssl_cert<P: AsRef<Path>>, cert: P);
+    path_opt!(ssl_cert, cert);
     option_setter!(ssl_cert_type, kind: &str);
-    //option_setter!(ssl_key<P: AsRef<Path>>, key: P);
+    path_opt!(ssl_key, key);
     option_setter!(ssl_key_type, kind: &str);
     option_setter!(key_password, password: &str);
     option_setter!(ssl_engine, engine: &str);
@@ -115,32 +141,38 @@ impl EasyBuilder {
     option_setter!(ssl_version, version: SslVersion);
     option_setter!(ssl_verify_host, verify: bool);
     option_setter!(ssl_verify_peer, verify: bool);
-    //option_setter!(cainfo<P: AsRef<Path>>, path: P);
-    //option_setter!(issuer_cert<P: AsRef<Path>>, path: P);
-    //option_setter!(capath<P: AsRef<Path>>, path: P);
-    //option_setter!(crlfile<P: AsRef<Path>>, path: P);
+    path_opt!(cainfo, path);
+    path_opt!(issuer_cert, path);
+    path_opt!(capath, path);
+    path_opt!(crlfile, path);
     option_setter!(certinfo, enable: bool);
-    //option_setter!(random_file<P: AsRef<Path>>, p: P);
-    //option_setter!(egd_socket<P: AsRef<Path>>, p: P);
+    path_opt!(random_file, p);
+    path_opt!(egd_socket, p);
     option_setter!(ssl_cipher_list, ciphers: &str);
     option_setter!(ssl_sessionid_cache, enable: bool);
 
     pub fn on_write<F>(&mut self, f: F) -> &mut EasyBuilder
         where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static {
         if let Err(e) = self.easy.write_function(f) {
-            self.error = Some(e);
+            self.errors.push(e);
         }
         self
     }
 
     pub fn has_errors(&self) -> bool {
-        self.error.is_some()
+        !self.errors.is_empty()
     }
 
-    pub fn result(&mut self) -> BuildResult {
-        match self.error {
-            None        => Ok(&mut self.easy),
-            Some(ref e) => Err(e.clone()),
+    pub fn result(&mut self) -> BuildResult<&mut Easy> {
+        if !self.has_errors() {
+            Ok(&mut self.easy)
+        } else {
+            let mut s = String::new();
+            for e in &self.errors {
+                s.push_str(e.description());
+                s.push('\n');
+            }
+            Err(BuildError::from(s))
         }
     }
 }
@@ -162,6 +194,7 @@ mod tests {
         assert!(b.result().is_ok());
     }
 
+    /*
     #[test]
     fn http_get() {
         let mut easy = EasyBuilder::new();
@@ -173,4 +206,5 @@ mod tests {
                        .unwrap();
         easy.perform().unwrap();
     }
+    */
 }
