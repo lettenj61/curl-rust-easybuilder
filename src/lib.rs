@@ -12,7 +12,7 @@ use std::path::Path;
 use std::time::Duration;
 use curl::easy::{Easy, List};
 use curl::easy::{IpResolve, ProxyType, SslVersion, TimeCondition};
-use curl::easy::{WriteError};
+use curl::easy::{ReadError, WriteError};
 
 mod errors {
     error_chain! {
@@ -29,7 +29,7 @@ use errors::*;
 
 pub struct EasyBuilder {
     easy: Easy,
-    // FIXME: I'm not sure is this effective and reasonable.
+    // FIXME: I'm not sure is it reasonable and effective.
     errors: Vec<curl::Error>,
 }
 
@@ -159,6 +159,14 @@ impl EasyBuilder {
         self
     }
 
+    pub fn on_read<F>(&mut self, f: F) -> &mut EasyBuilder
+        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static {
+        if let Err(e) = self.easy.read_function(f) {
+            self.errors.push(e);
+        }
+        self
+    }
+
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
@@ -180,7 +188,7 @@ impl EasyBuilder {
 #[cfg(test)]
 mod tests {
 
-    use std::io::{self, stdout, Write};
+    use std::io::{self, stdout, Read, Write};
     use curl::easy::*;
     use super::*;
 
@@ -194,7 +202,6 @@ mod tests {
         assert!(b.result().is_ok());
     }
 
-    /*
     #[test]
     fn http_get() {
         let mut easy = EasyBuilder::new();
@@ -206,5 +213,20 @@ mod tests {
                        .unwrap();
         easy.perform().unwrap();
     }
-    */
+
+    #[test]
+    fn http_post() {
+        let mut easy = EasyBuilder::new();
+        let easy = easy.url("https://httpbin.org/post")
+                       .post(true)
+                       .on_read(|into| {
+                           Ok(b"foobar"[..].read(into).unwrap())
+                       })
+                       .on_write(|data| {
+                           Ok(stdout().write(data).unwrap())
+                       })
+                       .result()
+                       .unwrap();
+        easy.perform().unwrap();
+    }
 }
