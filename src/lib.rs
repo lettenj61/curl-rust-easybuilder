@@ -188,7 +188,7 @@ impl EasyBuilder {
 #[cfg(test)]
 mod tests {
 
-    use std::io::{self, stdout, Read, Write};
+    use std::io::{self, stdout, Cursor, Read, Write};
     use curl::easy::*;
     use super::*;
 
@@ -220,7 +220,8 @@ mod tests {
         let easy = easy.url("https://httpbin.org/post")
                        .post(true)
                        .on_read(|into| {
-                           Ok(b"foobar"[..].read(into).unwrap())
+                           let mut cursor = Cursor::new(b"foobar"[..].to_vec());
+                           Ok(cursor.read(into).unwrap())
                        })
                        .on_write(|data| {
                            Ok(stdout().write(data).unwrap())
