@@ -6,6 +6,7 @@ extern crate curl_easybuilder;
 use std::io::{stdout, Write};
 //use nickel::{Nickel, HttpRouter};
 
+use curl::easy::Easy;
 use curl_easybuilder::*;
 
 #[test]
@@ -34,4 +35,14 @@ fn http_post() {
         .result()
         .unwrap();
     easy.perform().unwrap();
+}
+
+#[test]
+fn start_transfer() {
+    let mut easy = Easy::new();
+    let mut tx = TransferBuilder::with_session(&mut easy);
+    let tx = tx.write_function(|data| Ok(stdout().write(data).unwrap()))
+               .result()
+               .unwrap();
+    tx.perform().unwrap();
 }

@@ -13,7 +13,7 @@ pub struct TransferBuilder<'easy, 'data> {
 
 impl<'easy, 'data> TransferBuilder<'easy, 'data> {
 
-    pub fn new(easy: &'easy mut Easy) -> TransferBuilder<'easy, 'data> {
+    pub fn with_session(easy: &'easy mut Easy) -> TransferBuilder<'easy, 'data> {
         TransferBuilder {
             transfer: easy.transfer(),
             errors: Vec::new(),
