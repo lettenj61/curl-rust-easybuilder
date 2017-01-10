@@ -1,8 +1,3 @@
-//! Simple builder for curl-rust Easy API.
-//!
-//! The struct helps to create and initialize an `Easy` handle with
-//! major curl options, or to set some callback operations.
-
 extern crate curl;
 
 use std::error::Error;
@@ -43,7 +38,6 @@ macro_rules! path_opt {
 }
 
 impl EasyBuilder {
-
     pub fn new() -> EasyBuilder {
         EasyBuilder {
             easy: Easy::new(),
@@ -139,7 +133,8 @@ impl EasyBuilder {
     option_setter!(ssl_sessionid_cache, enable: bool);
 
     pub fn on_write<F>(&mut self, f: F) -> &mut EasyBuilder
-        where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static {
+        where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static
+    {
         if let Err(e) = self.easy.write_function(f) {
             self.errors.push(e);
         }
@@ -147,7 +142,8 @@ impl EasyBuilder {
     }
 
     pub fn on_read<F>(&mut self, f: F) -> &mut EasyBuilder
-        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static {
+        where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static
+    {
         if let Err(e) = self.easy.read_function(f) {
             self.errors.push(e);
         }
@@ -169,52 +165,5 @@ impl EasyBuilder {
             }
             Err(BuildError::from(s))
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use std::io::{self, stdout, Cursor, Read, Write};
-    use curl::easy::*;
-    use super::*;
-
-    #[test]
-    fn it_works() {
-    }
-
-    #[test]
-    fn build_result() {
-        let mut b = EasyBuilder::new();
-        assert!(b.result().is_ok());
-    }
-
-    #[test]
-    fn http_get() {
-        let mut easy = EasyBuilder::new();
-        let easy = easy.url("https://www.rust-lang.org/")
-                       .on_write(|data| {
-                           Ok(stdout().write(data).unwrap())
-                       })
-                       .result()
-                       .unwrap();
-        easy.perform().unwrap();
-    }
-
-    #[test]
-    fn http_post() {
-        let mut easy = EasyBuilder::new();
-        let easy = easy.url("https://httpbin.org/post")
-                       .post(true)
-                       .on_read(|into| {
-                           let mut cursor = Cursor::new(b"foobar"[..].to_vec());
-                           Ok(cursor.read(into).unwrap())
-                       })
-                       .on_write(|data| {
-                           Ok(stdout().write(data).unwrap())
-                       })
-                       .result()
-                       .unwrap();
-        easy.perform().unwrap();
     }
 }
