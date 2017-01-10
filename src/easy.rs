@@ -132,7 +132,7 @@ impl EasyBuilder {
     option_setter!(ssl_cipher_list, ciphers: &str);
     option_setter!(ssl_sessionid_cache, enable: bool);
 
-    pub fn on_write<F>(&mut self, f: F) -> &mut EasyBuilder
+    pub fn write_function<F>(&mut self, f: F) -> &mut EasyBuilder
         where F: FnMut(&[u8]) -> Result<usize, WriteError> + Send + 'static
     {
         if let Err(e) = self.easy.write_function(f) {
@@ -141,7 +141,7 @@ impl EasyBuilder {
         self
     }
 
-    pub fn on_read<F>(&mut self, f: F) -> &mut EasyBuilder
+    pub fn read_function<F>(&mut self, f: F) -> &mut EasyBuilder
         where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + Send + 'static
     {
         if let Err(e) = self.easy.read_function(f) {

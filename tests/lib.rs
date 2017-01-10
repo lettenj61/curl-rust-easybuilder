@@ -18,7 +18,7 @@ fn build_result() {
 fn http_get() {
     let mut easy = EasyBuilder::new();
     let easy = easy.url("https://www.rust-lang.org/")
-        .on_write(|data| Ok(stdout().write(data).unwrap()))
+        .write_function(|data| Ok(stdout().write(data).unwrap()))
         .result()
         .unwrap();
     easy.perform().unwrap();
@@ -30,7 +30,7 @@ fn http_post() {
     let easy = easy.url("https://httpbin.org/post")
         .post(true)
         .post_fields_copy(&b"name=foobar"[..])
-        .on_write(|data| Ok(stdout().write(data).unwrap()))
+        .write_function(|data| Ok(stdout().write(data).unwrap()))
         .result()
         .unwrap();
     easy.perform().unwrap();
