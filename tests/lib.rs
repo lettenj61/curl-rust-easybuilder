@@ -19,9 +19,9 @@ fn build_result() {
 fn http_get() {
     let mut easy = EasyBuilder::new();
     let easy = easy.url("https://www.rust-lang.org/")
-        .write_function(|data| Ok(stdout().write(data).unwrap()))
-        .result()
-        .unwrap();
+                   .write_function(|data| Ok(stdout().write(data).unwrap()))
+                   .result()
+                   .unwrap();
     easy.perform().unwrap();
 }
 
@@ -29,20 +29,29 @@ fn http_get() {
 fn http_post() {
     let mut easy = EasyBuilder::new();
     let easy = easy.url("https://httpbin.org/post")
-        .post(true)
-        .post_fields_copy(&b"name=foobar"[..])
-        .write_function(|data| Ok(stdout().write(data).unwrap()))
-        .result()
-        .unwrap();
+                   .post(true)
+                   .post_fields_copy(&b"name=foobar"[..])
+                   .write_function(|data| Ok(stdout().write(data).unwrap()))
+                   .result()
+                   .unwrap();
     easy.perform().unwrap();
 }
 
 #[test]
 fn start_transfer() {
+    let mut result: Result<_, _>;
+
     let mut easy = Easy::new();
-    let mut tx = TransferBuilder::with_session(&mut easy);
-    let tx = tx.write_function(|data| Ok(stdout().write(data).unwrap()))
-               .result()
-               .unwrap();
-    tx.perform().unwrap();
+    let mut tx = TransferBuilder::new(&mut easy);
+
+    result = tx.result();
+    /*
+    {
+        let _r: &mut TransferBuilder = &mut tx;
+        _r.write_function(|data| Ok(stdout().write(data).unwrap()));
+    }
+    */
+
+    //let tx = tx.result();
+    //tx.perform().unwrap();
 }
