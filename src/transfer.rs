@@ -6,74 +6,67 @@ use curl::easy::{Easy, Transfer, InfoType, SeekResult, ReadError, WriteError};
 
 use super::errors::*;
 
-type WriteFn<'d> = FnMut(&[u8]) -> Result<usize, WriteError> + 'd;
-type ReadFn<'d> = FnMut(&mut [u8]) -> Result<usize, ReadError> + 'd;
-type SeekFn<'d> = FnMut(SeekFrom) -> SeekResult + 'd;
-type ProgFn<'d> = FnMut(f64, f64, f64, f64) -> bool + 'd;
-type DebugFn<'d> = FnMut(InfoType, &[u8]) + 'd;
-type HeaderFn<'d> = FnMut(&[u8]) -> bool + 'd;
+#[derive(Default)]
+struct Callbacks<'d> {
+    write: Option<Box<FnMut(&[u8]) -> Result<usize, WriteError> + 'd>>,
+    read: Option<Box<FnMut(&mut [u8]) -> Result<usize, ReadError> + 'd>>,
+    seek: Option<Box<FnMut(SeekFrom) -> SeekResult + 'd>>,
+    debug: Option<Box<FnMut(InfoType, &[u8]) + 'd>>,
+    header: Option<Box<FnMut(&[u8]) -> bool + 'd>>,
+    progress: Option<Box<FnMut(f64, f64, f64, f64) -> bool + 'd>>,
+}
 
 pub struct TransferBuilder<'data> {
-    write_cb: Option<Box<WriteFn<'data>>>,
-    read_cb: Option<Box<ReadFn<'data>>>,
-    seek_cb: Option<Box<SeekFn<'data>>>,
-    progress_cb: Option<Box<ProgFn<'data>>>,
-    debug_cb: Option<Box<DebugFn<'data>>>,
-    header_cb: Option<Box<HeaderFn<'data>>>,
+    callbacks: Callbacks<'data>,
 }
 
 impl<'data> TransferBuilder<'data> {
 
     pub fn new() -> TransferBuilder<'data> {
         TransferBuilder {
-            write_cb: None,
-            read_cb: None,
-            seek_cb: None,
-            progress_cb: None,
-            debug_cb: None,
-            header_cb: None,
+            callbacks: Default::default(),
         }
     }
 
     pub fn write_function<F>(&'data mut self, f: F) -> &mut TransferBuilder<'data>
         where F: FnMut(&[u8]) -> Result<usize, WriteError> + 'data
     {
-        self.write_cb = Some(Box::new(f));
+        self.callbacks.write = Some(Box::new(f));
         self
     }
 
     pub fn read_function<F>(&'data mut self, f: F) -> &mut TransferBuilder<'data>
         where F: FnMut(&mut [u8]) -> Result<usize, ReadError> + 'data
     {
-        self.read_cb = Some(Box::new(f));
+        self.callbacks.read = Some(Box::new(f));
         self
     }
 
     pub fn seek_function<F>(&'data mut self, f: F) -> &mut TransferBuilder<'data>
         where F: FnMut(SeekFrom) -> SeekResult + 'data
     {
-        self.seek_cb = Some(Box::new(f));
+        self.callbacks.seek = Some(Box::new(f));
         self
     }
 
     pub fn progress_function<F>(&'data mut self, f: F) -> &mut TransferBuilder<'data>
         where F: FnMut(f64, f64, f64, f64) -> bool + 'data
     {
-        self.progress_cb = Some(Box::new(f));
+        self.callbacks.progress = Some(Box::new(f));
         self
     }
 
     pub fn debug_function<F>(&'data mut self, f: F) -> &mut TransferBuilder<'data>
         where F: FnMut(InfoType, &[u8]) + 'data
     {
-        self.debug_cb = Some(Box::new(f));
+        self.callbacks.debug = Some(Box::new(f));
         self
     }
 
     pub fn header_function<F>(&'data mut self, f: F) -> &mut TransferBuilder<'data>
         where F: FnMut(&[u8]) -> bool + 'data
     {
-        self.header_cb = Some(Box::new(f));
+        self.callbacks.header = Some(Box::new(f));
         self
     }
 
@@ -140,12 +133,13 @@ impl<'data> TransferBuilder<'data> {
     pub fn result<'easy>(&mut self, easy: &'easy mut Easy) -> BuildResult<Transfer<'easy, 'data>> {
         let _errors = Vec::<curl::Error>::new();
 
-        let tx = easy.transfer();
+        let tx: Transfer<'easy, 'data> = easy.transfer();
 
-        if self.write_cb.is_some() {
-            let res = tx.write_function(self.write_cb.unwrap());
+        if self.callbacks.write.is_some() {
+            let cb = self.callbacks.write.unwrap();
+            tx.write_function(*cb);
         }
 
-        Ok(easy.transfer())
+        Ok(tx)
     }
 }
