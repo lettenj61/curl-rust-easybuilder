@@ -19,7 +19,5 @@ pub mod errors {
 }
 
 mod easy;
-mod transfer;
 
 pub use easy::EasyBuilder;
-pub use transfer::TransferBuilder;
