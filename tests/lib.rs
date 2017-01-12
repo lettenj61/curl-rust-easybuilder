@@ -9,12 +9,6 @@ use std::io::{stdout, Write};
 use curl_easybuilder::*;
 
 #[test]
-fn build_result() {
-    let mut b = EasyBuilder::new();
-    assert!(b.result().is_ok());
-}
-
-#[test]
 fn http_get() {
     let mut easy = EasyBuilder::new();
     let easy = easy.url("https://www.rust-lang.org/")
