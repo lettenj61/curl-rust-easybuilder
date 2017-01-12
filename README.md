@@ -2,6 +2,7 @@
 
 A builder pattern for [curl-rust](https://github.com/alexcrichton/curl-rust) crate
 
+[![Crates.io](https://img.shields.io/crates/v/curl-easybuilder.svg)](https://crates.io/crates/curl-easybuilder)
 [![Build Status](https://travis-ci.org/lettenj61/curl-rust-easybuilder.svg?branch=master)](https://travis-ci.org/lettenj61/curl-rust-easybuilder)
 
 ## Add to your project
