@@ -1,6 +1,6 @@
 [package]
 name = "curl-easybuilder"
-version = "0.1.0"
+version = "0.1.1-pre"
 authors = ["lettenj61 <lettenj61@users.noreply.github.com>"]
 description = "Tiny crate to introduce builder for curl-rust Easy API."
 license = "MIT"
