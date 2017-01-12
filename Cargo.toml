@@ -1,8 +1,10 @@
 [package]
-authors = ["lettenj61 <lettenj61@users.noreply.github.com>"]
-description = "Tiny crate to introduce builder for curl-rust Easy API."
 name = "curl-easybuilder"
 version = "0.1.0"
+authors = ["lettenj61 <lettenj61@users.noreply.github.com>"]
+description = "Tiny crate to introduce builder for curl-rust Easy API."
+license = "MIT"
+repository = "https://github.com/lettenj61/curl-rust-easybuilder"
 
 [dependencies]
 curl = "0.4"
