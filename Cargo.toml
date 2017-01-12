@@ -9,6 +9,3 @@ repository = "https://github.com/lettenj61/curl-rust-easybuilder"
 [dependencies]
 curl = "0.4"
 error-chain = "0.7.2"
-
-[dev-dependencies]
-nickel = "0.9"

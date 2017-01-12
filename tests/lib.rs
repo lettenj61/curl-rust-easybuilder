@@ -1,11 +1,7 @@
 extern crate curl;
-// #[macro_use] extern crate nickel;
-
 extern crate curl_easybuilder;
 
 use std::io::{stdout, Write};
-//use nickel::{Nickel, HttpRouter};
-
 use curl_easybuilder::*;
 
 #[test]
