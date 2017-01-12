@@ -9,6 +9,13 @@ use curl::easy::{ReadError, WriteError};
 
 use super::errors::*;
 
+/// The builder struct for `curl::easy::Easy` handler.
+///
+/// See the API document of `curl-rust` for detailed descriptions
+/// that `Easy` API provides.
+///
+/// All errors occured during building operations will be stored in a internal `Vec`,
+/// and exposed at finalization, which is when the builder's `build()` method is called.
 pub struct EasyBuilder {
     easy: Easy,
     // FIXME: I'm not sure is it reasonable and effective.
@@ -38,6 +45,15 @@ macro_rules! path_opt {
 }
 
 impl EasyBuilder {
+
+    /// Creates a builder.
+    /// # Examples
+    ///
+    /// ```
+    /// use curl_easybuilder::EasyBuilder;
+    ///
+    /// let easy = EasyBuilder::new();
+    /// ```
     pub fn new() -> EasyBuilder {
         EasyBuilder {
             easy: Easy::new(),
@@ -150,10 +166,21 @@ impl EasyBuilder {
         self
     }
 
+    /// Tests if the builder stores any `curl::Error` happend during this build.
     pub fn has_errors(&self) -> bool {
         !self.errors.is_empty()
     }
 
+    /// Finalize the builder and returns mutable reference of `Easy` wrapped inside a `Result`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use curl_easybuilder::EasyBuilder;
+    ///
+    /// let mut b = EasyBuilder::new();
+    /// assert!(b.result().is_ok());
+    /// ```
     pub fn result(&mut self) -> BuildResult<&mut Easy> {
         if !self.has_errors() {
             Ok(&mut self.easy)
